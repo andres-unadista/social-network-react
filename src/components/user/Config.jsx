@@ -3,12 +3,12 @@ import useAuth from '../../hooks/useAuth';
 import { Global } from '../../helpers/Global';
 import avatar from '../../assets/img/user.png';
 import { SerializeForm } from '../../helpers/SerializeForm';
-import Swal from 'sweetalert2'; // Importa SweetAlert2
+import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
 
 export const Config = () => {
-  // Se reciben los métodos setAuth y SetCounters
-  const { auth } = useAuth();
+  // Se recibe la información desde el Contexto a través del hook useAuth
+  const { auth, setAuth } = useAuth();
 
   // Estado para mostrar resultado del registro del user
   const [saved, setSaved] = useState('not_saved');
@@ -16,9 +16,13 @@ export const Config = () => {
   // Hook para redirigir
   const navigate = useNavigate();
 
+  // Función para actualizar el usuario
   const updateUser = async (e) => {
-    // prevenir que se actualice la pantalla
+    // Prevenir que se actualice la pantalla
     e.preventDefault();
+
+    // Variable para almacenar el token para las peticiones a realizar en este componente
+    const token = localStorage.getItem('token');
 
     // Obtener los datos del formulario
     let newDataUser = SerializeForm(e.target);
@@ -26,40 +30,98 @@ export const Config = () => {
     // Borrar file0 porque no lo vamos a actualizar por acá
     delete newDataUser.file0;
 
-    // Actualizar el usuario modificado en la BD con una petición Ajax
-    const request = await fetch(Global.url + 'user/update', {
-      method: 'PUT',
-      body: JSON.stringify(newDataUser),
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: localStorage.getItem('token'),
-      },
-    });
-
-    // Obtener la información retornada por la request
-    const data = await request.json();
-
-    if (data.status == 'success') {
-      setSaved('saved');
-
-      // Mostrar modal de éxito
-      Swal.fire({
-        title: '¡Usuario actualizado correctamente!',
-        icon: 'success',
-        confirmButtonText: 'Continuar',
-      }).then(() => {
-        // Redirigir después de cerrar el modal
-        navigate('/');
+    try {
+      // Actualizar el usuario modificado en la BD con una petición Ajax
+      const userUpdateResponse = await fetch(`${Global.url}user/update`, {
+        method: 'PUT',
+        body: JSON.stringify(newDataUser),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: token,
+        },
       });
-    } else {
+
+      // Obtener la información retornada por la request
+      const userData = await userUpdateResponse.json();
+
+      if (userData.status === 'success' && userData.user) {
+        // Eliminar del objeto recibido la contraseña
+        delete userData.user.password;
+
+        // Actualizar en el Contexto los datos del usuario modificado
+        setAuth(userData.user);
+        setSaved('saved');
+
+        // Seleccionar el elemento que del formulario donde se va a subir el archivo del avatar
+        const fileInput = document.querySelector('#file');
+        if (fileInput.files[0]) {
+          await uploadAvatar(fileInput.files[0], token);
+        }
+
+        // Mostrar modal de éxito
+        Swal.fire({
+          title: '¡Usuario actualizado correctamente!',
+          icon: 'success',
+          confirmButtonText: 'Continuar',
+        }).then(() => {
+          // Redirigir después de cerrar el modal
+          navigate('/login');
+        });
+      } else {
+        setSaved('error');
+
+        // Mostrar modal de error
+        Swal.fire({
+          title: '¡El usuario no se ha actualizado!',
+          icon: 'error',
+          confirmButtonText: 'Intentar nuevamente',
+        });
+      }
+    } catch (error) {
+      console.error('Error updating user:', error);
       setSaved('error');
 
       // Mostrar modal de error
       Swal.fire({
-        title: '¡El usuario no se ha actualizado!',
+        title: '¡Error al actualizar el usuario!',
         icon: 'error',
         confirmButtonText: 'Intentar nuevamente',
       });
+    }
+  };
+
+  // Función para actualizar el avatar del usuario
+  const uploadAvatar = async (file, token) => {
+    try {
+      // Obtener el archivo a subir
+      const formData = new FormData();
+      formData.append('file0', file);
+
+      // Petición para enviar el archivo a la api del Backend y guardarla
+      const uploadResponse = await fetch(`${Global.url}user/upload`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          Authorization: token,
+        },
+      });
+
+      // Obtener la información retornada por la request
+      const uploadData = await uploadResponse.json();
+
+      if (uploadData.status === 'success' && uploadData.user) {
+        // Eliminar del objeto recibido la contraseña
+        delete uploadData.user.password;
+
+        // Actualizar en el Contexto los datos del usuario modificado
+        setAuth(uploadData.user);
+        setSaved('saved');
+      } else {
+        setSaved('error');
+      }
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      setSaved('error');
     }
   };
 
@@ -71,8 +133,12 @@ export const Config = () => {
       <div className="content__posts">
         <div className="form-style">
           {/* Respuestas de usuario registrado*/}
-          {saved == 'saved' ? <strong className="alert alert-success">¡Usuario actualizado correctamente!</strong> : ''}
-          {saved == 'error' ? <strong className="alert alert-danger">¡El usuario no se ha actualizado!</strong> : ''}
+          {saved === 'saved' ? (
+            <strong className="alert alert-success">¡Usuario actualizado correctamente!</strong>
+          ) : (
+            ''
+          )}
+          {saved === 'error' ? <strong className="alert alert-danger">¡El usuario no se ha actualizado!</strong> : ''}
 
           <form className="config-form" onSubmit={updateUser}>
             <div className="form-group">
@@ -102,21 +168,20 @@ export const Config = () => {
 
             <div className="form-group">
               <label htmlFor="password">Contraseña</label>
-              <input type="password" name="password" required />
+              <input type="password" name="password" />
             </div>
 
             <div className="form-group">
               <label htmlFor="file0">Avatar</label>
               <div className="avatar">
                 <div className="general-info__container-avatar">
-                  {auth.image != 'default.png' && (
+                  {auth.image !== 'default.png' ? (
                     <img
-                      src={Global.url + 'user/avatar/' + auth.image}
+                      src={`${Global.url}user/avatar/${auth.image}`}
                       className="container-avatar__img"
                       alt="Foto de perfil"
                     />
-                  )}
-                  {auth.image == 'default.png' && (
+                  ) : (
                     <img src={avatar} className="container-avatar__img" alt="Foto de perfil" />
                   )}
                 </div>
