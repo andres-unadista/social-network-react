@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import avatar from '../../../assets/img/user.png';
 import { Global } from '../../../helpers/Global';
 import useAuth from '../../../hooks/useAuth';
@@ -17,13 +18,14 @@ export const Sidebar = () => {
         <div className="aside__profile-info">
           <div className="profile-info__general-info">
             <div className="general-info__container-avatar">
-              {auth.image != 'default.png' ? (
+              {auth.image != 'default.png' && (
                 <img
                   src={Global.url + 'user/avatar/' + auth.image}
                   className="container-avatar__img"
                   alt="Foto de perfil"
                 />
-              ) : (
+              )}
+              {auth.image == 'default.png' && (
                 <img src={avatar} className="container-avatar__img" alt="Foto de perfil" />
               )}
             </div>
@@ -39,16 +41,16 @@ export const Sidebar = () => {
 
           <div className="profile-info__stats">
             <div className="stats__following">
-              <a href="#" className="following__link">
+              <Link to={'siguiendo/' + auth._id} className="following__link">
                 <span className="following__title">Siguiendo</span>
                 <span className="following__number"> {counters.following} </span>
-              </a>
+              </Link>
             </div>
             <div className="stats__following">
-              <a href="#" className="following__link">
+              <Link to={'seguidores/' + auth._id} className="following__link">
                 <span className="following__title">Seguidores</span>
                 <span className="following__number"> {counters.followed} </span>
-              </a>
+              </Link>
             </div>
 
             <div className="stats__following">

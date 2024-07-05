@@ -17,7 +17,7 @@ export const PublicLayout = () => {
 
       {/* Contenido Principal */}
       <section className='layout__content'>
-        {!auth._id ?
+      {!auth?._id ?
             <Outlet />
           :
             <Navigate to="/rsocial" />

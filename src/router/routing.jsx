@@ -8,8 +8,10 @@ import { Error404 } from '../components/layout/Error404';
 import { AuthProvider } from '../context/AuthProvider';
 import { Logout } from '../components/user/Logout';
 import { Feed } from '../components/publication/feed';
-import { People } from '../components/follow/People';
+import { People } from '../components/user/People';
 import { Config } from '../components/user/Config';
+import { Following } from '../components/follow/Following';
+import { Followers } from '../components/follow/Followers';
 
 export const Routing = () => {
   return (
@@ -30,6 +32,8 @@ export const Routing = () => {
             <Route path="gente" element={<People />} />
             <Route path="config" element={<Config />} />
             <Route path="logout" element={<Logout />} />
+            <Route path="siguiendo/:userId" element={<Following />} />
+            <Route path="seguidores/:userId" element={<Followers />} />
           </Route>
 
           {/* Configuramos la ruta para el error 404 */}
