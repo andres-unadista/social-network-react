@@ -49,7 +49,7 @@ export const Config = () => {
         confirmButtonText: 'Continuar',
       }).then(() => {
         // Redirigir después de cerrar el modal
-        navigate('/login');
+        navigate('/');
       });
     } else {
       setSaved('error');
