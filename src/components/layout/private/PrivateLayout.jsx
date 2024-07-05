@@ -16,7 +16,7 @@ export const PrivateLayout = () => {
 
         <div className="container">
           {/* Contenido Principal */}
-          <section className="layout__content">{auth._id ? <Outlet /> : <Navigate to="/login" />}</section>
+          <section className="layout__content">{auth._id ? <Outlet /> : <Navigate to="/" />}</section>
 
           {/* Barra Lateral */}
           <Sidebar />
